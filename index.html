@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>وش كان رأيك؟</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="logo">👁️ وش كان رأيك؟</div>
+      <nav>
+        <a href="#hero">الرئيسية</a>
+        <a href="#cats">الأقسام</a>
+        <a href="#qs">الأسئلة</a>
+        <a href="#" onclick="openForm()">اطرح سؤال</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="hero" class="hero-section">
+    <div class="hero-text">
+      <h1>وش كان رأيك؟</h1>
+      <p>خذ رأي الناس وساعد غيرك في اتخاذ القرار</p>
+      <button class="btn" onclick="document.getElementById('qs').scrollIntoView({behavior:'smooth'})">ابدأ التصفح</button>
+    </div>
+  </section>
+
+  <section id="cats" class="cats-section">
+    <h2>الأقسام</h2>
+    <div class="cat-grid">
+      <div class="cat" onclick="filterQs('برمجة')">برمجة</div>
+      <div class="cat" onclick="filterQs('أجهزة')">أجهزة</div>
+      <div class="cat" onclick="filterQs('ألعاب')">ألعاب</div>
+      <div class="cat" onclick="filterQs('وظائف')">وظائف</div>
+      <div class="cat" onclick="filterQs('مشكلة')">مشكلة</div>
+      <div class="cat" onclick="filterQs('عام')">عام</div>
+      <div class="cat" onclick="filterQs('أخرى')">أخرى</div>
+    </div>
+  </section>
+
+  <main id="qs">
+    <h2>الأسئلة</h2>
+    <div id="ql" class="question-list"><button onclick="submitQ()">نشر</button>
+</div>
+  </main>
+
+  <footer>
+    <p>© 2025 وش كان رأيك؟ — كل الحقوق محفوظة</p>
+  </footer>
+
+  <!-- نافذة طرح سؤال -->
+  <div id="formBox" class="popup-form">
+    <div class="form">
+      <h3>اكتب سؤالك</h3>
+      <input id="qText" type="text" placeholder="اكتب سؤالك هنا..." />
+      <select id="qCat">
+        <option>برمجة</option>
+        <option>أجهزة</option>
+        <option>ألعاب</option>
+        <option>وظائف</option>
+        <option>مشكلة</option>
+        <option>عام</option>
+        <option>أخرى</option>
+      </select>
+      <button onclick="submitQ()">نشر</button>
+      <button onclick="closeForm()" class="close">إغلاق</button>
+    </div>
+  </div>
+
+  <script>
+    function openForm() {
+      document.getElementById("formBox").style.display = "flex";
+    }
+    function closeForm() {
+      document.getElementById("formBox").style.display = "none";
+    }
+  </script>
+
+  
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs
+  } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDYZhJEuNZkcXUpMblwW-jh2jZdUZ147BY",
+    authDomain: "wsh-kan-rayk.firebaseapp.com",
+    projectId: "wsh-kan-rayk",
+    storageBucket: "wsh-kan-rayk.appspot.com",
+    messagingSenderId: "149539289082",
+    appId: "1:149539289082:web:eb9cb8f61c2bad12201643"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let allQuestions = [];
+
+  async function loadQuestions() {
+    const ql = document.getElementById("ql");
+    if (!ql) return;
+    ql.innerHTML = "";
+    allQuestions = [];
+
+    const snapshot = await getDocs(collection(db, "questions"));
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      allQuestions.push(data);
+    });
+
+    renderQs();
+  }
+
+  function renderQs(cat = null) {
+    const ql = document.getElementById("ql");
+    if (!ql) return;
+    ql.innerHTML = "";
+
+    const list = cat ? allQuestions.filter(q => q.category === cat) : allQuestions;
+
+    list.forEach(q => {
+      const div = document.createElement("div");
+      div.className = "q";
+      div.onclick = () => {
+        localStorage.setItem("selQ", q.title);
+        location.href = "question.html";
+      };
+      div.innerHTML = `
+        <strong>${q.title}</strong>
+        <div class="m">${q.category} • ${q.time}</div>
+      `;
+      ql.appendChild(div);
+    });
+  }
+
+  window.submitQ = async function () {
+    const title = document.getElementById("qText").value;
+    const cat = document.getElementById("qCat").value;
+
+    if (title.trim()) {
+      await addDoc(collection(db, "questions"), {
+        title: title,
+        category: cat,
+        time: "الآن"
+      });
+
+      document.getElementById("formBox").style.display = "none";
+      loadQuestions();
+    }
+  };
+
+  window.filterQs = function(cat) {
+    renderQs(cat);
+  };
+
+  loadQuestions();
+</script>
+
+</body>
+</html>
